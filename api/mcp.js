@@ -59,14 +59,6 @@ const SERVER_INFO = {
   description: `MCP server for Apple services (Mode: ${MODE})`,
 };
 
-function makeJsonRpcResponse(id, payload) {
-  return {
-    jsonrpc: '2.0',
-    id,
-    result: payload,
-  };
-}
-
 async function handleRequest(request) {
   const { method, params, id } = request || {};
 
@@ -194,7 +186,7 @@ module.exports = async function handler(req, res) {
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
       res.write('event: endpoint\n');
-      res.write('data: /messages\n\n');
+      res.write('data: /api/mcp\n\n');
 
       const keepAlive = setInterval(() => {
         res.write(': keep-alive\n\n');
@@ -215,7 +207,6 @@ module.exports = async function handler(req, res) {
       endpoints: {
         mcp: '/api/mcp',
         sse: '/api/mcp',
-        messages: '/messages',
       },
     });
     return;
