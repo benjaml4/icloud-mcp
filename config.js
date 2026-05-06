@@ -52,7 +52,7 @@ module.exports = {
   DEFAULTS: {
     TIMEZONE: 'Europe/Madrid',
     PAGE_SIZE: 25,
-    MAX_RESULTS: 50,
+    MAX_RESULTS: 1000,
     EMAIL_BODY_MAX_LENGTH: 50000,
     DATE_FORMAT: 'es-ES'
   },
