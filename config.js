@@ -5,17 +5,19 @@
 
 require('dotenv').config();
 
+const useLocalModeRaw = process.env.USE_LOCAL_MODE ?? process.env.USELOCALMODE;
+
 module.exports = {
   // Mode flags
   USE_TEST_MODE: process.env.USE_TEST_MODE === 'true',
-  USE_LOCAL_MODE: process.env.USE_LOCAL_MODE !== 'false', // Default to true (local mode)
+  USE_LOCAL_MODE: useLocalModeRaw !== 'false', // Default to true (local mode)
 
   // Check if running on macOS (required for local mode)
   IS_MACOS: process.platform === 'darwin',
 
   // iCloud credentials
   ICLOUD_EMAIL: process.env.ICLOUD_EMAIL,
-  ICLOUD_APP_PASSWORD: process.env.ICLOUD_APP_PASSWORD,
+  ICLOUD_APP_PASSWORD: process.env.ICLOUD_APP_PASSWORD ?? process.env.ICLOUDAPPPASSWORD,
 
   // IMAP settings for iCloud Mail
   IMAP: {
