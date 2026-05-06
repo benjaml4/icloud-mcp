@@ -204,7 +204,7 @@ async function listContacts(count = 25) {
  * Search contacts
  */
 async function searchContacts(query, count = 25) {
-  const allContacts = await listContacts(count * 2);
+  const allContacts = await listContacts(config.DEFAULTS.MAX_RESULTS);
   const lowerQuery = query.toLowerCase();
 
   const matches = allContacts.filter(contact => {
