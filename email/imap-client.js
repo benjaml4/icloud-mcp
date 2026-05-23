@@ -306,6 +306,107 @@ async function markAsRead(uid, folder = 'inbox', isRead = true) {
 }
 
 /**
+ * Move an email from one folder to another
+ */
+async function moveEmail(uid, sourceFolder = 'inbox', targetFolder) {
+  if (!targetFolder) {
+    throw new Error('Target folder is required');
+  }
+
+  return withImap(async (imap) => {
+    return new Promise((resolve, reject) => {
+      const sourceFolderName = getFolderName(sourceFolder);
+      const targetFolderName = getFolderName(targetFolder);
+
+      if (sourceFolderName === targetFolderName) {
+        reject(new Error('Source and target folders must be different'));
+        return;
+      }
+
+      imap.openBox(sourceFolderName, false, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const supportsMove = imap.serverSupports('MOVE');
+        const method = supportsMove ? 'MOVE' : 'COPY_DELETE_EXPUNGE';
+
+        try {
+          // node-imap falls back to COPY + \Deleted + EXPUNGE when MOVE is
+          // unavailable, preserving unrelated \Deleted flags if UIDPLUS is absent.
+          imap.move(uid, targetFolderName, (moveErr) => {
+            if (moveErr) {
+              reject(moveErr);
+              return;
+            }
+
+            resolve({
+              success: true,
+              uid,
+              sourceFolder: sourceFolderName,
+              targetFolder: targetFolderName,
+              method
+            });
+          });
+        } catch (moveErr) {
+          reject(moveErr);
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Mark multiple emails as read/unread
+ */
+async function bulkMarkAsRead(uids, folder = 'inbox', isRead = true) {
+  return withImap(async (imap) => {
+    return new Promise((resolve, reject) => {
+      const folderName = getFolderName(folder);
+
+      imap.openBox(folderName, false, async (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const method = isRead ? 'addFlags' : 'delFlags';
+        const failures = [];
+        let count = 0;
+
+        for (const uid of uids) {
+          try {
+            await new Promise((flagResolve, flagReject) => {
+              imap[method](uid, ['\\Seen'], (flagErr) => {
+                if (flagErr) {
+                  flagReject(flagErr);
+                } else {
+                  flagResolve();
+                }
+              });
+            });
+            count += 1;
+          } catch (flagErr) {
+            failures.push({
+              uid,
+              error: flagErr.message || 'Unknown error'
+            });
+          }
+        }
+
+        resolve({
+          count,
+          failures,
+          folder: folderName,
+          isRead
+        });
+      });
+    });
+  });
+}
+
+/**
  * List folders
  */
 async function listFolders() {
@@ -346,6 +447,8 @@ module.exports = {
   readEmail,
   searchEmails,
   markAsRead,
+  moveEmail,
+  bulkMarkAsRead,
   listFolders,
   getFolderName
 };

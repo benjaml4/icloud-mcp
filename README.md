@@ -35,8 +35,8 @@ Uses AppleScript to access native macOS apps. **Faster, works offline, more serv
 
 | Service | App | Tools |
 |---------|-----|-------|
-| **Email** | Mail.app | 6 |
-| **Calendar** | Calendar.app | 5 |
+| **Email** | Mail.app | 10 |
+| **Calendar** | Calendar.app | 4 |
 | **Contacts** | Contacts.app | 5 |
 | **Reminders** | Reminders.app | 7 |
 | **Notes** | Notes.app | 5 |
@@ -56,7 +56,7 @@ Uses iCloud protocols (IMAP, CalDAV, CardDAV). Requires app-specific password.
 
 ## Features
 
-- **31 Tools** in local mode (17 in cloud mode)
+- **38 Tools** in local mode (21 in cloud mode)
 - **Dual Mode** - switch between local (fast) and cloud (remote access)
 - **7 Services** - Email, Calendar, Contacts, Reminders, Notes, Messages, Safari
 - **Secure Authentication** - AppleScript permissions or app-specific passwords
@@ -132,7 +132,7 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `about` | Server information |
 | `check-auth-status` | Verify credentials |
 
-### Email (6)
+### Email (10)
 
 | Tool | Description |
 |------|-------------|
@@ -141,16 +141,19 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `send-email` | Compose and send email |
 | `search-emails` | Search by criteria |
 | `mark-as-read` | Mark read/unread |
+| `move-email` | Move an email between folders |
+| `archive-email` | Move an email to archive |
+| `move-to-trash` | Move an email to Trash/Deleted Messages |
+| `bulk-mark-as-read` | Mark multiple emails read/unread |
 | `list-folders` | List mail folders |
 
-### Calendar (5)
+### Calendar (4)
 
 | Tool | Description |
 |------|-------------|
 | `list-events` | List upcoming events |
 | `list-calendars` | List all calendars |
 | `create-event` | Create new event |
-| `update-event` | Update existing event |
 | `delete-event` | Delete an event |
 
 ### Contacts (5)
@@ -271,7 +274,7 @@ icloud-mcp/
 | Works offline | ✅ | ❌ |
 | Remote access | ❌ | ✅ |
 | Services | 7 | 3 |
-| Tools | 31 | 17 |
+| Tools | 38 | 21 |
 | Requirements | macOS | App-specific password |
 
 ---

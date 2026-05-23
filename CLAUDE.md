@@ -6,8 +6,8 @@ This MCP server provides Claude with access to Apple services via two modes:
 
 | Mode | Description | Services | Requirements |
 |------|-------------|----------|--------------|
-| **LOCAL** (default) | AppleScript access to macOS apps | 7 services, 31 tools | macOS |
-| **CLOUD** | iCloud protocols (IMAP, CalDAV, CardDAV) | 3 services, 17 tools | App-specific password |
+| **LOCAL** (default) | AppleScript access to macOS apps | 7 services, 38 tools | macOS |
+| **CLOUD** | iCloud protocols (IMAP, CalDAV, CardDAV) | 3 services, 21 tools | App-specific password |
 
 ## Services Available
 
@@ -15,8 +15,8 @@ This MCP server provides Claude with access to Apple services via two modes:
 
 | Service | Protocol | Tools |
 |---------|----------|-------|
-| **Email** | Mail.app (AppleScript) | 6 |
-| **Calendar** | Calendar.app (AppleScript) | 5 |
+| **Email** | Mail.app (AppleScript) | 10 |
+| **Calendar** | Calendar.app (AppleScript) | 4 |
 | **Contacts** | Contacts.app (AppleScript) | 5 |
 | **Reminders** | Reminders.app (AppleScript) | 7 |
 | **Notes** | Notes.app (AppleScript) | 5 |
@@ -91,25 +91,28 @@ icloud-mcp/
     └── error-handler.js
 ```
 
-## Tools (31 total in local mode)
+## Tools (38 total in local mode)
 
 ### Auth (2)
 - `about` - Server information
 - `check-auth-status` - Verify credentials
 
-### Email (6)
+### Email (10)
 - `list-emails` - List emails from folder
 - `read-email` - Read email content
 - `send-email` - Send email
 - `search-emails` - Search by criteria
 - `mark-as-read` - Mark read/unread
+- `move-email` - Move an email between folders
+- `archive-email` - Move an email to archive
+- `move-to-trash` - Move an email to Trash/Deleted Messages
+- `bulk-mark-as-read` - Mark multiple emails read/unread
 - `list-folders` - List mail folders
 
-### Calendar (5)
+### Calendar (4)
 - `list-events` - List upcoming events
 - `list-calendars` - List calendars
 - `create-event` - Create event
-- `update-event` - Update event
 - `delete-event` - Delete event
 
 ### Contacts (5)
