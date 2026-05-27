@@ -58,7 +58,7 @@ Uses iCloud protocols (IMAP, CalDAV, CardDAV). Requires app-specific password.
 
 ## Features
 
-- **47 Tools** in local mode (17 in cloud mode)
+- **55 Tools** in local mode (17 in cloud mode)
 - **Dual Mode** - switch between local (fast) and cloud (remote access)
 - **9 Services** - Email, Calendar, Contacts, Reminders, Notes, Messages, Safari, Music, iCloud Drive (sync)
 - **Secure Authentication** - AppleScript permissions or app-specific passwords
@@ -214,18 +214,26 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `music-search-library` | Search library tracks |
 | `music-play-track` | Play first search match |
 
-### iCloud Drive (6) - Local Only
+### iCloud Drive (14) - Local Only
 
-Reads the **local sync folder** (`~/Library/Mobile Documents/com~apple~CloudDocs`), not the CloudKit API.
+Reads the **local sync folder** (`~/Library/Mobile Documents/com~apple~CloudDocs`). For cloud-only files, install `icloud-tools` and use background download/evict tools.
 
 | Tool | Description |
 |------|-------------|
-| `icloud-drive-info` | Show sync folder path |
+| `icloud-drive-info` | Show sync folder path + icloud-tools availability |
+| `icloud-sync-status` | List local vs cloud-only files (icloud-tools) |
+| `icloud-download` | Download cloud-only files in background |
+| `icloud-evict` | Remove local copies, keep files in cloud |
+| `icloud-move` | Move files/folders safely (icloud-tools) |
+| `icloud-copy` | Copy files/folders safely (icloud-tools) |
+| `icloud-mkdir` | Create folders |
+| `icloud-rename` | Rename/move path |
+| `icloud-delete` | Delete file/folder |
 | `icloud-drive-summary` | Overview by top-level folder (size, file count) |
 | `list-icloud-files` | List files/folders |
 | `scan-icloud-drive` | Full inventory (paths, sizes, dates) |
 | `search-icloud-files` | Search by name/path |
-| `read-icloud-file` | Read small text files (max 512KB) |
+| `read-icloud-file` | Read text files (auto-download if cloud-only) |
 
 ---
 

@@ -48,6 +48,19 @@ function parseNdjson(stdout) {
   return events;
 }
 
+async function runIcloudCommand(args, maxBuffer = 64 * 1024 * 1024) {
+  const { stdout, stderr } = await execFileAsync(getBinary(), args, {
+    maxBuffer,
+    env: { ...process.env, NO_COLOR: '1' }
+  });
+
+  return {
+    stdout,
+    stderr: stderr?.trim() || '',
+    events: parseNdjson(stdout)
+  };
+}
+
 /**
  * icloud status --json
  */
@@ -65,12 +78,7 @@ async function getSyncStatus(relativePath = '', {
   if (sort) args.push('--sort', sort);
   args.push(target);
 
-  const { stdout } = await execFileAsync(getBinary(), args, {
-    maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, NO_COLOR: '1' }
-  });
-
-  const events = parseNdjson(stdout);
+  const { events } = await runIcloudCommand(args);
   const files = events.filter((e) => e.path || e.file || e.src);
 
   return {
@@ -103,12 +111,7 @@ async function download(relativePath = '', {
   if (timeout) args.push('-t', String(timeout));
   args.push(target);
 
-  const { stdout, stderr } = await execFileAsync(getBinary(), args, {
-    maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, NO_COLOR: '1' }
-  });
-
-  const events = parseNdjson(stdout);
+  const { events, stderr } = await runIcloudCommand(args);
 
   return {
     path: relativePath || '.',
@@ -136,12 +139,7 @@ async function evict(relativePath = '', {
   if (verbose) args.push('-v');
   args.push(target);
 
-  const { stdout, stderr } = await execFileAsync(getBinary(), args, {
-    maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, NO_COLOR: '1' }
-  });
-
-  const events = parseNdjson(stdout);
+  const { events, stderr } = await runIcloudCommand(args);
 
   return {
     path: relativePath || '.',
@@ -158,13 +156,73 @@ async function evict(relativePath = '', {
 async function ensureDownloaded(relativePath) {
   const target = resolveTarget(relativePath);
   const args = ['download', '--json', target];
+  const { events } = await runIcloudCommand(args, 16 * 1024 * 1024);
+  return { downloaded: true, events };
+}
 
-  const { stdout } = await execFileAsync(getBinary(), args, {
-    maxBuffer: 16 * 1024 * 1024,
-    env: { ...process.env, NO_COLOR: '1' }
-  });
+async function move(sources, destination, {
+  dryRun = false,
+  force = false,
+  noClobber = false,
+  verbose = false,
+  maxConcurrent = 3,
+  timeout = 120
+} = {}) {
+  const srcList = Array.isArray(sources) ? sources : [sources];
+  const resolvedSources = srcList.map((s) => resolveTarget(s));
+  const resolvedDestination = resolveTarget(destination);
+  const args = ['mv', '--json'];
 
-  return { downloaded: true, events: parseNdjson(stdout) };
+  if (dryRun) args.push('-d');
+  if (force) args.push('-f');
+  if (noClobber) args.push('-n');
+  if (verbose) args.push('-v');
+  if (maxConcurrent) args.push('-j', String(maxConcurrent));
+  if (timeout) args.push('-t', String(timeout));
+  args.push(...resolvedSources, resolvedDestination);
+
+  const { events, stderr } = await runIcloudCommand(args);
+  return {
+    sources: srcList,
+    destination,
+    dryRun,
+    events,
+    stderr
+  };
+}
+
+async function copy(sources, destination, {
+  recursive = false,
+  dryRun = false,
+  force = false,
+  noClobber = false,
+  verbose = false,
+  maxConcurrent = 3,
+  timeout = 120
+} = {}) {
+  const srcList = Array.isArray(sources) ? sources : [sources];
+  const resolvedSources = srcList.map((s) => resolveTarget(s));
+  const resolvedDestination = resolveTarget(destination);
+  const args = ['cp', '--json'];
+
+  if (recursive) args.push('-r');
+  if (dryRun) args.push('-d');
+  if (force) args.push('-f');
+  if (noClobber) args.push('-n');
+  if (verbose) args.push('-v');
+  if (maxConcurrent) args.push('-j', String(maxConcurrent));
+  if (timeout) args.push('-t', String(timeout));
+  args.push(...resolvedSources, resolvedDestination);
+
+  const { events, stderr } = await runIcloudCommand(args);
+  return {
+    sources: srcList,
+    destination,
+    recursive,
+    dryRun,
+    events,
+    stderr
+  };
 }
 
 async function getInstallHint() {
@@ -183,6 +241,8 @@ module.exports = {
   getSyncStatus,
   download,
   evict,
+  move,
+  copy,
   ensureDownloaded,
   getInstallHint,
   getBinary

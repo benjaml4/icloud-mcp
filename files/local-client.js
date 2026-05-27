@@ -291,10 +291,32 @@ async function readFileText(relativePath, maxBytes = MAX_READ_BYTES) {
   };
 }
 
+async function createDirectory(relativePath) {
+  const dirPath = resolveSafePath(relativePath);
+  await fs.mkdir(dirPath, { recursive: true });
+  return { success: true, path: relativePath };
+}
+
+async function renamePath(fromPath, toPath) {
+  const source = resolveSafePath(fromPath);
+  const target = resolveSafePath(toPath);
+  await fs.rename(source, target);
+  return { success: true, from: fromPath, to: toPath };
+}
+
+async function deletePath(relativePath, recursive = true) {
+  const target = resolveSafePath(relativePath);
+  await fs.rm(target, { recursive, force: false });
+  return { success: true, path: relativePath, recursive };
+}
+
 module.exports = {
   getDriveInfo,
   listFiles,
   readFileText,
+  createDirectory,
+  renamePath,
+  deletePath,
   walkDrive,
   getDriveSummary,
   searchFiles,
