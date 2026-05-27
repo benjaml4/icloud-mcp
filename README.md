@@ -58,7 +58,7 @@ Uses iCloud protocols (IMAP, CalDAV, CardDAV). Requires app-specific password.
 
 ## Features
 
-- **55 Tools** in local mode (17 in cloud mode)
+- **57 Tools** in local mode (17 in cloud mode)
 - **Dual Mode** - switch between local (fast) and cloud (remote access)
 - **9 Services** - Email, Calendar, Contacts, Reminders, Notes, Messages, Safari, Music, iCloud Drive (sync)
 - **Secure Authentication** - AppleScript permissions or app-specific passwords
@@ -214,7 +214,7 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `music-search-library` | Search library tracks |
 | `music-play-track` | Play first search match |
 
-### iCloud Drive (14) - Local Only
+### iCloud Drive (16) - Local Only
 
 Reads the **local sync folder** (`~/Library/Mobile Documents/com~apple~CloudDocs`). For cloud-only files, install `icloud-tools` and use background download/evict tools.
 
@@ -233,6 +233,8 @@ Reads the **local sync folder** (`~/Library/Mobile Documents/com~apple~CloudDocs
 | `list-icloud-files` | List files/folders |
 | `scan-icloud-drive` | Full inventory (paths, sizes, dates) |
 | `search-icloud-files` | Search by name/path |
+| `icloud-spotlight-search` | Search via macOS Spotlight index (`mdfind`) |
+| `icloud-file-metadata` | Read Spotlight metadata (`mdls`) |
 | `read-icloud-file` | Read text files (auto-download if cloud-only) |
 
 ---

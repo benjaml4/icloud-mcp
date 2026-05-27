@@ -4,6 +4,7 @@
 
 const localClient = require('./local-client');
 const icloudTools = require('./icloud-tools-client');
+const spotlight = require('./spotlight-client');
 const { handleError } = require('../utils/error-handler');
 
 async function requireIcloudTools() {
@@ -346,6 +347,58 @@ const filesTools = [
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return handleError(error, 'search-icloud-files');
+      }
+    }
+  },
+  {
+    name: 'icloud-spotlight-search',
+    description: 'Search iCloud Drive via macOS Spotlight index (name/content metadata)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Raw mdfind query (e.g. "invoice", "kMDItemFSName == \\\"*.pdf\\\"c")'
+        },
+        path: {
+          type: 'string',
+          description: 'Restrict search under this iCloud Drive subfolder (default: root)'
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Maximum results to return (default: 100)'
+        }
+      },
+      required: ['query']
+    },
+    handler: async ({ query, path: relPath = '', maxResults = 100 }) => {
+      try {
+        const result = await spotlight.searchSpotlight(query, {
+          onlyInRelativePath: relPath,
+          maxResults
+        });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (error) {
+        return handleError(error, 'icloud-spotlight-search');
+      }
+    }
+  },
+  {
+    name: 'icloud-file-metadata',
+    description: 'Read Spotlight metadata (mdls) for an iCloud Drive file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'File path relative to iCloud Drive root' }
+      },
+      required: ['path']
+    },
+    handler: async ({ path: relPath }) => {
+      try {
+        const result = await spotlight.getMetadata(relPath);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (error) {
+        return handleError(error, 'icloud-file-metadata');
       }
     }
   },

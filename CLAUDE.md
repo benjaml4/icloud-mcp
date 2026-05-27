@@ -23,7 +23,7 @@ This MCP server provides Claude with access to Apple services via two modes:
 | **Messages** | Messages.app (AppleScript) | 1 |
 | **Safari** | Safari.app (AppleScript) | 4 |
 | **Music** | Music.app (AppleScript) | 7 |
-| **iCloud Drive** | Local sync + icloud-tools | 14 |
+| **iCloud Drive** | Local sync + icloud-tools + Spotlight | 16 |
 
 ### Cloud Mode
 
@@ -93,7 +93,7 @@ icloud-mcp/
     └── error-handler.js
 ```
 
-## Tools (55 total in local mode)
+## Tools (57 total in local mode)
 
 ### Auth (2)
 - `about` - Server information
