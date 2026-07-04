@@ -35,8 +35,8 @@ Uses AppleScript to access native macOS apps. **Faster, works offline, more serv
 
 | Service | App | Tools |
 |---------|-----|-------|
-| **Email** | Mail.app | 10 |
-| **Calendar** | Calendar.app | 4 |
+| **Email** | Mail.app | 8 |
+| **Calendar** | Calendar.app | 5 |
 | **Contacts** | Contacts.app | 5 |
 | **Reminders** | Reminders.app | 7 |
 | **Notes** | Notes.app | 5 |
@@ -56,7 +56,7 @@ Uses iCloud protocols (IMAP, CalDAV, CardDAV). Requires app-specific password.
 
 ## Features
 
-- **38 Tools** in local mode (21 in cloud mode)
+- **33 Tools** in local mode (19 in cloud mode)
 - **Dual Mode** - switch between local (fast) and cloud (remote access)
 - **7 Services** - Email, Calendar, Contacts, Reminders, Notes, Messages, Safari
 - **Secure Authentication** - AppleScript permissions or app-specific passwords
@@ -132,7 +132,7 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `about` | Server information |
 | `check-auth-status` | Verify credentials |
 
-### Email (10)
+### Email (8)
 
 | Tool | Description |
 |------|-------------|
@@ -141,19 +141,18 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `send-email` | Compose and send email |
 | `search-emails` | Search by criteria |
 | `mark-as-read` | Mark read/unread |
-| `move-email` | Move an email between folders |
-| `archive-email` | Move an email to archive |
-| `move-to-trash` | Move an email to Trash/Deleted Messages |
-| `bulk-mark-as-read` | Mark multiple emails read/unread |
+| `archive-email` | Move email to archive |
+| `delete-email` | Move email to trash |
 | `list-folders` | List mail folders |
 
-### Calendar (4)
+### Calendar (5)
 
 | Tool | Description |
 |------|-------------|
 | `list-events` | List upcoming events |
 | `list-calendars` | List all calendars |
 | `create-event` | Create new event |
+| `update-event` | Update existing event |
 | `delete-event` | Delete an event |
 
 ### Contacts (5)
@@ -173,7 +172,7 @@ Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/c
 | `list-reminder-lists` | List all reminder lists |
 | `list-reminders` | List reminders from a list |
 | `create-reminder` | Create new reminder |
-| `update-reminder` | Update reminder |
+| `update-reminder" | Update reminder |
 | `complete-reminder` | Mark as complete |
 | `delete-reminder` | Delete reminder |
 | `search-reminders` | Search reminders |
@@ -274,7 +273,7 @@ icloud-mcp/
 | Works offline | ✅ | ❌ |
 | Remote access | ❌ | ✅ |
 | Services | 7 | 3 |
-| Tools | 38 | 21 |
+| Tools | 33 | 19 |
 | Requirements | macOS | App-specific password |
 
 ---

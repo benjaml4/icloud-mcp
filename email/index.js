@@ -3,15 +3,11 @@
  * Provides email tools via IMAP/SMTP
  */
 
-const { listEmails, readEmail, searchEmails, markAsRead, moveEmail, bulkMarkAsRead, listFolders } = require('./imap-client');
+const { listEmails, readEmail, searchEmails, markAsRead, moveEmail, listFolders } = require('./imap-client');
 const { sendEmail } = require('./smtp-client');
 const { formatSuccess, formatError, withErrorHandler } = require('../utils/error-handler');
 const { formatDate, formatRelative } = require('../utils/date-utils');
 const config = require('../config');
-
-function getDefaultFolderName(alias, fallback) {
-  return config.EMAIL_FOLDERS[alias] || fallback;
-}
 
 /**
  * Handler: List emails
@@ -83,6 +79,7 @@ async function handleSendEmail(args) {
   }
 
   const result = await sendEmail({
+    from: args.from,
     to: args.to,
     cc: args.cc,
     bcc: args.bcc,
@@ -93,7 +90,7 @@ async function handleSendEmail(args) {
 
   if (result.success) {
     return formatSuccess(
-      `Email sent successfully!\n\nTo: ${args.to}${args.cc ? `\nCC: ${args.cc}` : ''}\nSubject: ${args.subject}\nMessage ID: ${result.messageId}`
+      `Email sent successfully!\n\nFrom: ${args.from || 'default'}\nTo: ${args.to}${args.cc ? `\nCC: ${args.cc}` : ''}\nSubject: ${args.subject}\nMessage ID: ${result.messageId}`
     );
   } else {
     return formatError(new Error('Failed to send email'));
@@ -145,25 +142,6 @@ async function handleMarkAsRead(args) {
 }
 
 /**
- * Handler: Move email
- */
-async function handleMoveEmail(args) {
-  if (!args.uid) {
-    return formatError(new Error('Email UID is required'));
-  }
-  if (!args.targetFolder) {
-    return formatError(new Error('Target folder is required'));
-  }
-
-  const sourceFolder = args.sourceFolder || args.folder || 'inbox';
-  const result = await moveEmail(args.uid, sourceFolder, args.targetFolder);
-
-  return formatSuccess(
-    `Email ${args.uid} moved from ${result.sourceFolder} to ${result.targetFolder}.`
-  );
-}
-
-/**
  * Handler: Archive email
  */
 async function handleArchiveEmail(args) {
@@ -171,56 +149,24 @@ async function handleArchiveEmail(args) {
     return formatError(new Error('Email UID is required'));
   }
 
-  const folder = args.folder || 'inbox';
-  const archiveFolder = args.archiveFolder || getDefaultFolderName('archive', 'Archive');
-  const result = await moveEmail(args.uid, folder, archiveFolder);
+  const sourceFolder = args.folder || 'inbox';
+  await moveEmail(args.uid, sourceFolder, 'archive');
 
-  return formatSuccess(
-    `Email ${args.uid} archived from ${result.sourceFolder} to ${result.targetFolder}.`
-  );
+  return formatSuccess(`Email ${args.uid} archived successfully.`);
 }
 
 /**
- * Handler: Move email to trash
+ * Handler: Delete email
  */
-async function handleMoveToTrash(args) {
+async function handleDeleteEmail(args) {
   if (!args.uid) {
     return formatError(new Error('Email UID is required'));
   }
 
-  const folder = args.folder || 'inbox';
-  const trashFolder = args.trashFolder || getDefaultFolderName('trash', 'Trash');
-  const result = await moveEmail(args.uid, folder, trashFolder);
+  const sourceFolder = args.folder || 'inbox';
+  await moveEmail(args.uid, sourceFolder, 'trash');
 
-  return formatSuccess(
-    `Email ${args.uid} moved from ${result.sourceFolder} to ${result.targetFolder}.`
-  );
-}
-
-/**
- * Handler: Bulk mark as read/unread
- */
-async function handleBulkMarkAsRead(args) {
-  if (!Array.isArray(args.uids) || args.uids.length === 0) {
-    return formatError(new Error('At least one email UID is required'));
-  }
-
-  const folder = args.folder || 'inbox';
-  const isRead = args.isRead !== false;
-  const result = await bulkMarkAsRead(args.uids, folder, isRead);
-  const action = isRead ? 'read' : 'unread';
-
-  if (result.failures.length === 0) {
-    return formatSuccess(`Marked ${result.count} email(s) as ${action} in ${result.folder}.`);
-  }
-
-  const failures = result.failures
-    .map(failure => `- ${failure.uid}: ${failure.error}`)
-    .join('\n');
-
-  return formatSuccess(
-    `Marked ${result.count} email(s) as ${action} in ${result.folder}.\n\nFailures (${result.failures.length}):\n${failures}`
-  );
+  return formatSuccess(`Email ${args.uid} moved to trash.`);
 }
 
 /**
@@ -280,6 +226,10 @@ const emailTools = [
     inputSchema: {
       type: 'object',
       properties: {
+        from: {
+          type: 'string',
+          description: 'Optional "From" header alias (e.g. your custom domain email)'
+        },
         to: {
           type: 'string',
           description: 'Recipient email address(es), comma-separated'
@@ -368,35 +318,8 @@ const emailTools = [
     handler: withErrorHandler(handleMarkAsRead, 'mark-as-read')
   },
   {
-    name: 'move-email',
-    description: 'Moves a single email UID from one folder to another',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uid: {
-          type: 'string',
-          description: 'The UID of the email to move'
-        },
-        sourceFolder: {
-          type: 'string',
-          description: 'Source email folder (default: inbox)'
-        },
-        folder: {
-          type: 'string',
-          description: 'Alias for sourceFolder (default: inbox)'
-        },
-        targetFolder: {
-          type: 'string',
-          description: 'Target email folder'
-        }
-      },
-      required: ['uid', 'targetFolder']
-    },
-    handler: withErrorHandler(handleMoveEmail, 'move-email')
-  },
-  {
     name: 'archive-email',
-    description: 'Moves a single email UID to the archive folder without deleting it',
+    description: 'Moves an email to the archive folder',
     inputSchema: {
       type: 'object',
       properties: {
@@ -407,10 +330,6 @@ const emailTools = [
         folder: {
           type: 'string',
           description: 'Source email folder (default: inbox)'
-        },
-        archiveFolder: {
-          type: 'string',
-          description: 'Archive folder (default: configured archive mapping or Archive)'
         }
       },
       required: ['uid']
@@ -418,53 +337,23 @@ const emailTools = [
     handler: withErrorHandler(handleArchiveEmail, 'archive-email')
   },
   {
-    name: 'move-to-trash',
-    description: 'Moves a single email UID to Trash/Deleted Messages without permanently deleting it',
+    name: 'delete-email',
+    description: 'Moves an email to the trash/deleted folder',
     inputSchema: {
       type: 'object',
       properties: {
         uid: {
           type: 'string',
-          description: 'The UID of the email to move to trash'
+          description: 'The UID of the email to delete'
         },
         folder: {
           type: 'string',
           description: 'Source email folder (default: inbox)'
-        },
-        trashFolder: {
-          type: 'string',
-          description: 'Trash folder (default: configured trash mapping or Trash)'
         }
       },
       required: ['uid']
     },
-    handler: withErrorHandler(handleMoveToTrash, 'move-to-trash')
-  },
-  {
-    name: 'bulk-mark-as-read',
-    description: 'Sequentially marks multiple email UIDs as read or unread',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uids: {
-          type: 'array',
-          items: {
-            type: 'string'
-          },
-          description: 'Email UIDs to update'
-        },
-        folder: {
-          type: 'string',
-          description: 'Email folder (default: inbox)'
-        },
-        isRead: {
-          type: 'boolean',
-          description: 'Mark as read (true) or unread (false). Default: true'
-        }
-      },
-      required: ['uids']
-    },
-    handler: withErrorHandler(handleBulkMarkAsRead, 'bulk-mark-as-read')
+    handler: withErrorHandler(handleDeleteEmail, 'delete-email')
   },
   {
     name: 'list-folders',
@@ -485,9 +374,7 @@ module.exports = {
   handleSendEmail,
   handleSearchEmails,
   handleMarkAsRead,
-  handleMoveEmail,
   handleArchiveEmail,
-  handleMoveToTrash,
-  handleBulkMarkAsRead,
+  handleDeleteEmail,
   handleListFolders
 };

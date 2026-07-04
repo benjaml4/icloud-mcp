@@ -186,6 +186,28 @@ async function markAsRead(emailId, isRead = true) {
 }
 
 /**
+ * Move email to another folder
+ * @param {string} emailId - Email ID
+ * @param {string} targetFolder - Target folder name
+ * @returns {Promise<Object>} - Result
+ */
+async function archiveEmail(emailId, folder = 'archive') {
+  const targetMailbox = getMailboxName(folder);
+  const script = `
+    tell application "Mail"
+      set theMessage to message id ${emailId}
+      set theAccount to account of (mailbox of theMessage)
+      set theTargetMailbox to mailbox "${escapeAppleScript(targetMailbox)}" of theAccount
+      move theMessage to theTargetMailbox
+    end tell
+    return "moved"
+  `;
+
+  await runAppleScript(script);
+  return { success: true, message: `Email moved to ${folder}` };
+}
+
+/**
  * List mail folders/mailboxes
  * @returns {Promise<Array>} - List of folders
  */
@@ -253,5 +275,6 @@ module.exports = {
   searchEmails,
   markAsRead,
   listFolders,
+  archiveEmail,
   deleteEmail
 };
