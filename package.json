@@ -1,10 +1,11 @@
 {
   "name": "icloud-mcp",
   "version": "2.0.0",
-  "description": "MCP server for iCloud services (Email, Calendar, Contacts)",
+  "description": "MCP server for Apple services — Email, Calendar, Contacts, Reminders, Notes, Messages, Safari, Music, iCloud Drive",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "start:http": "HTTP_PORT=8080 node index.js",
     "test-mode": "USE_TEST_MODE=true node index.js",
     "inspect": "npx -y @modelcontextprotocol/inspector node index.js"
   },
@@ -14,15 +15,23 @@
     "apple",
     "email",
     "calendar",
-    "contacts"
+    "contacts",
+    "reminders",
+    "notes",
+    "messages",
+    "safari",
+    "music",
+    "icloud-drive"
   ],
-  "author": "Carlos Lorenzo",
+  "author": "Carlos Lorenzo (merged by benjaml4)",
   "license": "MIT",
   "dependencies": {
+    "@scalekit-sdk/node": "^2.6.0",
     "ical.js": "^2.1.0",
     "imapflow": "^1.3.3",
     "mailparser": "^3.9.8",
     "nodemailer": "^8.0.9",
     "tsdav": "^2.2.2"
-  }
+  },
+  "optionalDependencies": {}
 }
