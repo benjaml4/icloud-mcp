@@ -202,7 +202,7 @@ const contactsTools = [
       properties: {
         count: {
           type: 'number',
-          description: 'Number of contacts to retrieve (default: 25, max: 50)'
+          description: 'Number of contacts to retrieve (default: 25, max: 1000)'
         }
       },
       required: []
@@ -221,7 +221,7 @@ const contactsTools = [
         },
         count: {
           type: 'number',
-          description: 'Max results (default: 25, max: 50)'
+          description: 'Max results (default: 25, max: 1000)'
         }
       },
       required: ['query']

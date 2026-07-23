@@ -5,7 +5,10 @@
 
 const config = require('../config');
 const useLocal = config.USE_LOCAL_MODE && config.IS_MACOS;
-const { listEmails, readEmail, searchEmails, markAsRead, listFolders } = useLocal ? require('./local-client') : require('./imap-client');
+const emailClient = useLocal ? require('./local-client') : require('./imap-client');
+const { listEmails, readEmail, searchEmails, markAsRead, listFolders } = emailClient;
+const { sendEmail } = useLocal ? require('./local-client') : require('./smtp-client');
+const moveEmail = useLocal ? (emailClient.archiveEmail ? emailClient.archiveEmail : null) : emailClient.moveEmail;
 const { sendEmail } = useLocal ? require('./local-client') : require('./smtp-client');
 const { formatSuccess, formatError, withErrorHandler } = require('../utils/error-handler');
 const { formatDate, formatRelative } = require('../utils/date-utils');
@@ -142,6 +145,46 @@ async function handleMarkAsRead(args) {
   await markAsRead(args.uid, folder, isRead);
 
   return formatSuccess(`Email ${args.uid} marked as ${isRead ? 'read' : 'unread'}.`);
+}
+
+/**
+ * Handler: Archive email
+ */
+async function handleArchiveEmail(args) {
+  if (!args.uid) {
+    return formatError(new Error('Email UID is required'));
+  }
+
+  const sourceFolder = args.folder || 'inbox';
+  if (useLocal && moveEmail) {
+    await moveEmail(args.uid, sourceFolder);
+  } else if (!useLocal && moveEmail) {
+    await moveEmail(args.uid, sourceFolder, 'archive');
+  } else {
+    return formatError(new Error('Archive/move not supported in current mode'));
+  }
+
+  return formatSuccess(`Email ${args.uid} archived successfully.`);
+}
+
+/**
+ * Handler: Delete email
+ */
+async function handleDeleteEmail(args) {
+  if (!args.uid) {
+    return formatError(new Error('Email UID is required'));
+  }
+
+  const sourceFolder = args.folder || 'inbox';
+  if (useLocal && emailClient.deleteEmail) {
+    await emailClient.deleteEmail(args.uid);
+  } else if (!useLocal && moveEmail) {
+    await moveEmail(args.uid, sourceFolder, 'trash');
+  } else {
+    return formatError(new Error('Delete not supported in current mode'));
+  }
+
+  return formatSuccess(`Email ${args.uid} moved to trash.`);
 }
 
 /**
@@ -289,6 +332,44 @@ const emailTools = [
     handler: withErrorHandler(handleMarkAsRead, 'mark-as-read')
   },
   {
+    name: 'archive-email',
+    description: 'Moves an email to the archive folder',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        uid: {
+          type: 'string',
+          description: 'The UID of the email to archive'
+        },
+        folder: {
+          type: 'string',
+          description: 'Source email folder (default: inbox)'
+        }
+      },
+      required: ['uid']
+    },
+    handler: withErrorHandler(handleArchiveEmail, 'archive-email')
+  },
+  {
+    name: 'delete-email',
+    description: 'Moves an email to the trash/deleted folder',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        uid: {
+          type: 'string',
+          description: 'The UID of the email to delete'
+        },
+        folder: {
+          type: 'string',
+          description: 'Source email folder (default: inbox)'
+        }
+      },
+      required: ['uid']
+    },
+    handler: withErrorHandler(handleDeleteEmail, 'delete-email')
+  },
+  {
     name: 'list-folders',
     description: 'Lists all email folders',
     inputSchema: {
@@ -307,5 +388,7 @@ module.exports = {
   handleSendEmail,
   handleSearchEmails,
   handleMarkAsRead,
+  handleArchiveEmail,
+  handleDeleteEmail,
   handleListFolders
 };

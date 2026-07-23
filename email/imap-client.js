@@ -228,6 +228,17 @@ async function markAsRead(uid, folder = 'inbox', isRead = true) {
 }
 
 /**
+ * Move email to another folder (archive, trash, etc.)
+ */
+async function moveEmail(uid, sourceFolder = 'inbox', targetFolder = 'archive') {
+  return withMailbox(sourceFolder, false, async (client) => {
+    const targetName = getFolderName(targetFolder);
+    await client.messageMove(uid, targetName, { uid: true });
+    return true;
+  });
+}
+
+/**
  * List folders
  */
 async function listFolders() {
@@ -267,6 +278,7 @@ module.exports = {
   readEmail,
   searchEmails,
   markAsRead,
+  moveEmail,
   listFolders,
   getFolderName
 };
