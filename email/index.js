@@ -9,7 +9,6 @@ const emailClient = useLocal ? require('./local-client') : require('./imap-clien
 const { listEmails, readEmail, searchEmails, markAsRead, listFolders } = emailClient;
 const { sendEmail } = useLocal ? require('./local-client') : require('./smtp-client');
 const moveEmail = useLocal ? (emailClient.archiveEmail ? emailClient.archiveEmail : null) : emailClient.moveEmail;
-const { sendEmail } = useLocal ? require('./local-client') : require('./smtp-client');
 const { formatSuccess, formatError, withErrorHandler } = require('../utils/error-handler');
 const { formatDate, formatRelative } = require('../utils/date-utils');
 
