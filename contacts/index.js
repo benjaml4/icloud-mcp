@@ -5,8 +5,31 @@
 
 const config = require('../config');
 const useLocal = config.USE_LOCAL_MODE && config.IS_MACOS;
-const { listContacts, searchContacts, getContact, createContact, deleteContact } = useLocal ? require('./local-client') : require('./carddav-client');
+const localClient = useLocal ? require('./local-client') : null;
+const carddavClient = useLocal ? null : require('./carddav-client');
 const { formatSuccess, formatError, withErrorHandler } = require('../utils/error-handler');
+
+/**
+ * Route to the right list/search function based on icloudOnly flag.
+ * - icloudOnly=true in local mode → CardDAV fallback (iCloud-only)
+ * - icloudOnly=false (default) in local mode → Contacts.app (all accounts)
+ * - Cloud mode always uses CardDAV (inherently iCloud-only)
+ */
+function getListContacts(icloudOnly) {
+  if (!useLocal) return carddavClient.listContacts;
+  if (icloudOnly) return localClient.listICloudContacts;
+  return localClient.listContacts;
+}
+
+function getSearchContacts(icloudOnly) {
+  if (!useLocal) return carddavClient.searchContacts;
+  if (icloudOnly) return localClient.searchICloudContacts;
+  return localClient.searchContacts;
+}
+
+// Re-export the remaining functions from the appropriate client
+const { searchContacts, getContact, createContact, deleteContact } = useLocal ? localClient : carddavClient;
+const { listContacts } = useLocal ? localClient : carddavClient;
 
 /** Normalize local (Contacts.app) and cloud (CardDAV) contact shapes */
 function contactDisplayName(contact) {
@@ -34,8 +57,10 @@ function contactRef(contact) {
  */
 async function handleListContacts(args) {
   const count = Math.min(args.count || 25, config.DEFAULTS.MAX_RESULTS);
+  const icloudOnly = args.icloudOnly === true;
 
-  const contacts = await listContacts(count);
+  const fn = getListContacts(icloudOnly);
+  const contacts = await fn(count);
 
   if (contacts.length === 0) {
     return formatSuccess('No contacts found.');
@@ -73,7 +98,10 @@ async function handleSearchContacts(args) {
   }
 
   const count = Math.min(args.count || 25, config.DEFAULTS.MAX_RESULTS);
-  const contacts = await searchContacts(args.query, count);
+  const icloudOnly = args.icloudOnly === true;
+
+  const fn = getSearchContacts(icloudOnly);
+  const contacts = await fn(args.query, count);
 
   if (contacts.length === 0) {
     return formatSuccess(`No contacts found matching "${args.query}".`);
@@ -196,13 +224,17 @@ async function handleDeleteContact(args) {
 const contactsTools = [
   {
     name: 'list-contacts',
-    description: 'Lists contacts from your iCloud address book',
+    description: 'Lists contacts from your iCloud address book. Set icloudOnly=true to filter out non-iCloud accounts (Exchange, Google, On My Mac) — only available in local mode.',
     inputSchema: {
       type: 'object',
       properties: {
         count: {
           type: 'number',
           description: 'Number of contacts to retrieve (default: 25, max: 1000)'
+        },
+        icloudOnly: {
+          type: 'boolean',
+          description: 'If true, only return iCloud contacts (filters out Exchange, Google, and other non-iCloud accounts). In cloud mode this has no effect (CardDAV is always iCloud-only).'
         }
       },
       required: []
@@ -211,7 +243,7 @@ const contactsTools = [
   },
   {
     name: 'search-contacts',
-    description: 'Search contacts by name, email, or phone',
+    description: 'Search contacts by name, email, or phone. Set icloudOnly=true to search only iCloud contacts.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -222,6 +254,10 @@ const contactsTools = [
         count: {
           type: 'number',
           description: 'Max results (default: 25, max: 1000)'
+        },
+        icloudOnly: {
+          type: 'boolean',
+          description: 'If true, only search iCloud contacts (filters out Exchange, Google, and other non-iCloud accounts). In cloud mode this has no effect.'
         }
       },
       required: ['query']

@@ -1,15 +1,104 @@
 /**
  * Local Contacts Client
  * Accesses Contacts.app via AppleScript
+ *
+ * Note: Contacts.app includes ALL accounts (iCloud, Exchange, Google, On My Mac, etc.).
+ * The AppleScript API does not expose which account a contact belongs to.
+ * For iCloud-only filtering, use the CardDAV fallback functions (listICloudContacts, etc.)
+ * which query contacts.icloud.com directly via the tsdav library.
  */
 
 const { runAppleScript, runJXA, escapeAppleScript, escapeJXA } = require('../utils/applescript');
 const config = require('../config');
+const { getCredentials } = require('../auth');
+
+// ── CardDAV fallback for iCloud-only contacts ──
+
+let _carddavClient = null;
+
+async function getCardDAVClient() {
+  if (_carddavClient) return _carddavClient;
+  const { DAVClient } = require('tsdav');
+  const creds = getCredentials();
+  const client = new DAVClient({
+    serverUrl: 'https://contacts.icloud.com',
+    credentials: { username: creds.email, password: creds.password },
+    authMethod: 'Basic',
+    defaultAccountType: 'carddav'
+  });
+  await client.login();
+  _carddavClient = client;
+  return client;
+}
+
+function parseVCard(vcardData, url) {
+  try {
+    const contact = {
+      url, uid: '', displayName: '', firstName: '', lastName: '',
+      emails: [], phones: [], organization: '', title: '', notes: ''
+    };
+    for (const line of vcardData.split(/\r?\n/)) {
+      const ci = line.indexOf(':');
+      if (ci === -1) continue;
+      const key = line.substring(0, ci).toUpperCase();
+      const value = line.substring(ci + 1);
+      const kp = key.split(';');
+      const mk = kp[0];
+      switch (mk) {
+        case 'UID': contact.uid = value; break;
+        case 'FN': contact.displayName = value.replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\'); break;
+        case 'N': { const np = value.split(';'); contact.lastName = (np[0]||'').replace(/\\;/g,';'); contact.firstName = (np[1]||'').replace(/\\;/g,';'); break; }
+        case 'EMAIL': contact.emails.push({ type: 'email', value }); break;
+        case 'TEL': contact.phones.push({ type: 'phone', value }); break;
+        case 'ORG': contact.organization = value.split(';')[0]; break;
+        case 'TITLE': contact.title = value; break;
+        case 'NOTE': contact.notes = value; break;
+      }
+    }
+    if (!contact.displayName && (contact.firstName || contact.lastName))
+      contact.displayName = `${contact.firstName} ${contact.lastName}`.trim();
+    return contact;
+  } catch { return null; }
+}
 
 /**
- * List contacts
- * @param {number} count - Number of contacts to retrieve
- * @returns {Promise<Array>} - List of contacts
+ * List iCloud-only contacts via CardDAV (bypasses Contacts.app)
+ */
+async function listICloudContacts(count = 25) {
+  const client = await getCardDAVClient();
+  const addressBooks = await client.fetchAddressBooks();
+  const all = [];
+  for (const ab of addressBooks) {
+    try {
+      const vcards = await client.fetchVCards({ addressBook: ab });
+      for (const v of vcards) {
+        const c = parseVCard(v.data, v.url);
+        if (c && c.displayName) all.push(c);
+      }
+    } catch (e) { console.error('CardDAV address book error:', e.message); }
+  }
+  all.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  return all.slice(0, count);
+}
+
+/**
+ * Search iCloud-only contacts via CardDAV
+ */
+async function searchICloudContacts(query, count = 25) {
+  const all = await listICloudContacts(100000);
+  const q = query.toLowerCase();
+  return all.filter(c => {
+    const text = [c.displayName, c.firstName, c.lastName, c.organization,
+      ...c.emails.map(e => e.value), ...c.phones.map(p => p.value)
+    ].join(' ').toLowerCase();
+    return text.includes(q);
+  }).slice(0, count);
+}
+
+// ── Contacts.app (AppleScript) — all accounts ──
+
+/**
+ * List contacts (all accounts via Contacts.app)
  */
 async function listContacts(count = 25) {
   const script = `
@@ -255,7 +344,7 @@ async function deleteContact(contactId) {
   return { success: true, message: 'Contact deleted successfully' };
 }
 
-/** Alias for carddav-client compatibility (contacts/index.js) */
+// Alias for carddav-client compatibility
 const getContact = readContact;
 
 module.exports = {
@@ -265,5 +354,8 @@ module.exports = {
   getContact,
   createContact,
   updateContact,
-  deleteContact
+  deleteContact,
+  // iCloud-only variants (via CardDAV, bypasses Contacts.app)
+  listICloudContacts,
+  searchICloudContacts
 };
