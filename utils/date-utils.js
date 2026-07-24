@@ -5,7 +5,7 @@
 const config = require('../config');
 
 /**
- * Format date for display (UK locale by default)
+ * Format date for display (locale configurable via DATE_FORMAT env var)
  */
 function formatDate(date, options = {}) {
   const d = date instanceof Date ? date : new Date(date);

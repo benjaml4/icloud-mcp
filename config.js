@@ -57,11 +57,11 @@ module.exports = {
 
   // Default settings
   DEFAULTS: {
-    TIMEZONE: 'Europe/London',
+    TIMEZONE: process.env.TZ || process.env.TIMEZONE || 'Europe/London',
     PAGE_SIZE: 25,
     MAX_RESULTS: 1000,
     EMAIL_BODY_MAX_LENGTH: 50000,
-    DATE_FORMAT: 'en-GB'
+    DATE_FORMAT: process.env.DATE_FORMAT || 'en-GB'
   },
 
   // Email folder mappings
