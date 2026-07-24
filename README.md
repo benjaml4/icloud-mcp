@@ -51,10 +51,30 @@ npm install
 Create a `.env` file (or set env vars):
 
 ```env
-ICLOUD_MAIL_ADDRESS=your_email@icloud.com
+ICLOUD_EMAIL=your_email@icloud.com
 ICLOUD_APP_PASSWORD=your_app_specific_password
 USE_LOCAL_MODE=true
 ```
+
+#### Timezone & Date Formatting
+
+The timezone and locale used for date formatting are configurable. Defaults are `Europe/London` and `en-GB`.
+
+```env
+# Override timezone (any IANA timezone name)
+TIMEZONE=America/New_York
+# Or use the standard TZ env var (takes precedence)
+TZ=Europe/Madrid
+
+# Override date/time locale (any BCP 47 locale tag)
+DATE_FORMAT=en-US
+```
+
+| Env Var | Precedence | Default | Example |
+|---------|-----------|---------|---------|
+| `TZ` | 1st | — | `Asia/Tokyo` |
+| `TIMEZONE` | 2nd | `Europe/London` | `America/New_York` |
+| `DATE_FORMAT` | — | `en-GB` | `es-ES` |
 
 ### Optional: ScaleKit OAuth 2.1 (for HTTP mode)
 
