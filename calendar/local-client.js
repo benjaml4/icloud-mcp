@@ -6,73 +6,41 @@
 const { runAppleScript, runJXA, escapeAppleScript, escapeJXA, formatAppleScriptDate } = require('../utils/applescript');
 const config = require('../config');
 
+// Lazy-load CalDAV client for event listing (server-side date filtering avoids
+// AppleEvent timeouts on calendars with thousands of events)
+let caldavListEvents = null;
+let caldavGetCalendars = null;
+
+async function loadCalDAV() {
+  if (caldavListEvents) return;
+  const caldav = require('./caldav-client');
+  caldavListEvents = caldav.listEvents;
+  caldavGetCalendars = caldav.getCalendars;
+}
+
 /**
- * List upcoming events from all calendars
+ * List upcoming events via CalDAV (server-side date filtering).
+ * Falls back to AppleScript only if CalDAV is unavailable.
  * @param {number} count - Number of events to retrieve
  * @param {number} daysAhead - Number of days to look ahead
  * @returns {Promise<Array>} - List of events
  */
 async function listEvents(count = 25, daysAhead = 30) {
-  const now = new Date();
-  const future = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-
-  // Use batch property access (only essential fields for speed)
-  const script = `
-    const calendar = Application('Calendar');
-    const cals = calendar.calendars;
-    const calNames = cals.name();
-    let allEvents = [];
-
-    for (let i = 0; i < calNames.length; i++) {
-      try {
-        const cal = cals[i];
-        const evts = cal.events;
-        const uids = evts.uid();
-        const summaries = evts.summary();
-        const starts = evts.startDate();
-        const ends = evts.endDate();
-        const allDayFlags = evts.alldayEvent();
-
-        const limit = Math.min(uids.length, 100);
-        for (let j = 0; j < limit; j++) {
-          allEvents.push({
-            id: uids[j],
-            summary: summaries[j] || '',
-            startDate: starts[j] ? starts[j].toISOString() : null,
-            endDate: ends[j] ? ends[j].toISOString() : null,
-            isAllDay: allDayFlags[j] || false,
-            calendar: calNames[i]
-          });
-        }
-      } catch (e) {}
-    }
-
-    JSON.stringify(allEvents);
-  `;
-
   try {
-    const result = await runJXA(script);
-    if (!result) return [];
-
-    let events = JSON.parse(result);
-
-    // Filter to date range and sort
-    events = events.filter(e => {
-      if (!e.startDate) return false;
-      const start = new Date(e.startDate);
-      return start >= now && start <= future;
-    });
-
-    events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-    return events.slice(0, count).map((e) => ({
+    await loadCalDAV();
+    const events = await caldavListEvents(count, daysAhead);
+    return events.map((e) => ({
       ...e,
-      start: e.startDate,
-      end: e.endDate || e.startDate,
-      calendarName: e.calendar,
-      url: e.id
+      id: e.uid || e.id,
+      startDate: e.start instanceof Date ? e.start.toISOString() : e.start,
+      endDate: (e.end instanceof Date ? e.end.toISOString() : e.end) || e.startDate,
+      isAllDay: e.isAllDay || false,
+      calendar: e.calendarName || e.calendar || 'Calendar',
+      calendarName: e.calendarName || e.calendar || 'Calendar',
+      url: e.url || e.uid || e.id
     }));
   } catch (error) {
-    console.error('Calendar listEvents error:', error.message);
+    console.error('Calendar listEvents (CalDAV fallback failed):', error.message);
     return [];
   }
 }
